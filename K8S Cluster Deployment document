@@ -1,0 +1,126 @@
+k8s部署操作手册
+安装部分：
+1.新建kubernetes repo源
+vim /etc/yum.repos.d/kubernetes.repo
+#内容
+[kubernetes]
+name=Kubernetes
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+2.关闭setenforce 服务
+setenforce 0
+
+3.安装相关服务并启动
+yum install -y docker kubelet kubeadm kubectl kubernetes-cni
+systemctl enable docker && systemctl start docker
+systemctl enable kubelet && systemctl start kubelet
+
+4.初始化master
+kubeadm init
+	初始化时可能遇到的问题
+	4.1 swap的报错需要设置
+		vim /etc/sysconfig/kubelet KUBELET_EXTRA_ARGS="--fail-swap-on=false"
+	4.2 需要忽略的报错
+		kubeadm init ----ignore-preflight-errors=Swap 如果mem和cpu不满足master的要求，也会报错
+	4.3 初始化时，部分镜像无法下载
+		查看需要使用到的镜像，人工下载
+		kubeadm config images list
+		根据查询结果，使用docker search 来下载对应版本的images
+		下载完成后，使用docker tag [已存在信息] [要求命名]
+		重命名后，使用docker rmi [删除旧信息]
+	4.4 初始化完成之后会返回本机master的信息如下
+		kubeadm join 192.168.31.128:6443 --token 74rl2p.1n2m2gxezowqr7zs \
+	--discovery-token-ca-cert-hash sha256:1532efc0f07b5b3d74acaf0729b7d3e461490ddc4b87671abd257f9a0ce0481b 
+	4.5 其他节点如需加入需要执行
+		kubeadm join --token <token> <master-ip>
+
+5.安装节点网络插件
+在Calico官网 上下载calico.yaml文件
+curl https://docs.projectcalico.org/manifests/calico.yaml -O
+下载完成后执行
+kubectl apply -f calico.yaml
+	执行该yaml文件可能会遇到的问题
+	5.1 The connection to the server localhost:8080 was refused - did you specify the right host or port?
+		该报错需要配置~/.bash_profile环境变量
+		echo “export KUBECONFIG=/etc/kubernetes/admin.conf” >> ~/.bash_profile
+		source ~/.bash_profile
+
+6.新建一个带nginx服务的pod
+首先需要使用docker拉取nginx的镜像
+docker pull nginx:latest
+然后可以通过命令或yaml文件的方式创建pod（推荐使用yaml） 
+	6.1 命令直接创建
+		kubectl run nginx --image=nginx:latest 
+	6.2 yaml文件创建
+		vim nginx.yaml
+#########内容############
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nginx
+  template:
+    metadata:
+      labels:
+        name: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: docker.io/nginx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service-nodeport
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  type: NodePort
+  selector:
+    name: nginx
+#########内容############
+
+7.关于kubectl的相关命令
+查看节点信息
+kubectl get node
+查看pod信息，及查看pod详情，加name查看对应pod
+kubectl get pod [name] -o wide
+删除pod
+kubectl delete pod [name]
+遇到删不掉的pod时，是因为yaml中使用了deployment，需要先删除deployments
+kubectl delete deployments [name]
+kubectl get deploymenets (查看)
+服务起来以后，查看对应映射的端口号
+kubectl get svc
+kubectl delete svc [name] 删除
+svc也通过nginx-svc.yml新建
+kubectl apply -f nginx-svc.yml
+vim nginx-svc.yml
+#########内容############
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+spec:
+  type: NodePort
+  selector:
+    name: nginx
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 80
+#########内容############
