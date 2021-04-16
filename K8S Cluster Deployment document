@@ -126,3 +126,6 @@ spec:
 #########内容############
 查看pod节点详情
 kubectl describe po
+
+检查是否创建了副本控制器 ：ReplicationController：kubectl get rc
+检查是否创建了副本集 ：replicasets：kubectl get rs
