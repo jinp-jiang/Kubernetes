@@ -124,3 +124,5 @@ spec:
     port: 8080
     targetPort: 80
 #########内容############
+查看pod节点详情
+kubectl describe po
