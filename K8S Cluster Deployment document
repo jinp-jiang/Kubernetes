@@ -31,6 +31,13 @@ kubeadm init
 		查看需要使用到的镜像，人工下载
 		kubeadm config images list
 		根据查询结果，使用docker search 来下载对应版本的images
+		docker pull louwy001/kube-scheduler:v1.21.0
+   		docker pull louwy001/kube-proxy:v1.21.0
+   		docker pull louwy001/pause:3.4.1
+   		docker pull louwy001/etcd:3.4.13-0
+   		docker pull louwy001/coredns:v1.8.0
+   		docker pull louwy001/coredns:v1.8
+   		docker pull louwy001/coredns-coredns:v1.8.0
 		下载完成后，使用docker tag [已存在信息] [要求命名]
 		重命名后，使用docker rmi [删除旧信息]
 	4.4 初始化完成之后会返回本机master的信息如下
