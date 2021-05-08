@@ -105,6 +105,12 @@ spec:
 kubectl apply -f nginx.yaml
 允许主节点部署pod
 kubectl taint nodes --all node-role.kubernetes.io/master-
+如果不允许调度
+kubectl taint nodes master1 node-role.kubernetes.io/master=:NoSchedule
+污点可选参数
+      NoSchedule: 一定不能被调度
+      PreferNoSchedule: 尽量不要调度
+      NoExecute: 不仅不会调度, 还会驱逐Node上已有的Pod
 
 7.关于kubectl的相关命令
 查看节点信息
