@@ -87,6 +87,18 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+	  volumeMounts:
+            - name: volume-data
+              mountPath: "/usr/share/nginx/html"
+            - name: nginx-conf
+              mountPath: "/etc/nginx/conf.d"
+      volumes:
+        - name: volume-data
+          hostPath:
+            path: /usr/local/nginx/html
+        - name: nginx-conf
+          hostPath:
+            path: /usr/local/nginx/conf.d
 ---
 apiVersion: v1
 kind: Service
