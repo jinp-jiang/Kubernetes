@@ -1,4 +1,5 @@
 k8s部署操作手册
+node节点CPU、MEM的大小直接影响是否可以顺利部署pod
 安装部分：
 1.新建kubernetes repo源
 vim /etc/yum.repos.d/kubernetes.repo
