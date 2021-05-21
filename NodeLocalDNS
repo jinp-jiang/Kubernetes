@@ -1,0 +1,3 @@
+关于NodeLocalDNS插件端口被占用问题的解决方法
+kubectl get/edit daemonset -n kube-system
+kubectl get/edit configmap -n kube-system
