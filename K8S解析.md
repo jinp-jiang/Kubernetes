@@ -513,6 +513,7 @@ CSI包括CSI Controller和CSI Node：
 - 2、然后配置kubelet和kubeproxy的启动参数，将Master URL指定为当前Kubernetes集群Master的地址，最后启动这些服务；
 - 3、通过kubelet默认的自动注册机制，新的Worker将会自动加入现有的Kubernetes集群中；
 - 4、Kubernetes Master在接受了新Worker的注册之后，会自动将其纳入当前集群的调度范围。
+- 注：可直接使用kubeadm join 指定master ip:port 以及token 即可，当需要重新指定时，需要先kubeadm reset。
 
 ### 简述Kubernetes Pod如何实现对节点的资源控制？
 
