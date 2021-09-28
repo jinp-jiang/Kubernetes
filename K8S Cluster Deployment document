@@ -23,6 +23,8 @@ systemctl enable kubelet && systemctl start kubelet
 
 4.初始化master
 kubeadm init
+kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.aliyuncs.com/google_containers 
+指定aipserverIP以及国内可使用的docker可用源
 	初始化时可能遇到的问题
 	4.1 swap的报错需要设置
 		vim /etc/sysconfig/kubelet KUBELET_EXTRA_ARGS="--fail-swap-on=false"
