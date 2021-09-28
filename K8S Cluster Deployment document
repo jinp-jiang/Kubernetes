@@ -22,8 +22,20 @@ systemctl enable docker && systemctl start docker
 systemctl enable kubelet && systemctl start kubelet
 
 4.初始化master
-kubeadm init
-kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.aliyuncs.com/google_containers 
+【preflight】 环境检查swap是否关闭，内核大小是否足够，拉去组件镜像
+【certs】生成k8s、Etcd证书（启用Https）证书目录/etc/kubernetes/pki
+【kubeconfig】生成kubeconfig文件，认证文件
+【kubelet-start】生成kubelet配置文件，并启动/var/lib/kubelet/kubeadm-flags.env   /var/lib/kubelet/config.yaml
+【control-plane】部署管理节点组件，用镜像启动容器 /etc/kubernetes/manifests
+【etcd】部署etcd数据库，用镜像启动容器
+【upload-config】【kubelet】【upload-certs】上传配置文件及证书，存储到k8s
+【mark-control-plane】为管理节点添加标签，添加的一个污点node-role.kubernetes.io/master 目的不要让容器分配到master
+【bootstrap-token】【kubelet-finalize】为其他节点kubelet自动颁发证书使用
+【addons】插件部署CoreDNS、kube-proxy
+
+
+kubeadm init   kubeadm reset（重置）
+kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.aliyuncs.com/google_containers --service-cidr=10.96.0.0/12 --pod-network-cidr=10.244.0.0/16
 指定aipserverIP以及国内可使用的docker可用源
 	初始化时可能遇到的问题
 	4.1 swap的报错需要设置
@@ -51,7 +63,8 @@ kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.
 
 5.安装节点网络插件
 在Calico官网 上下载calico.yaml文件
-curl https://docs.projectcalico.org/manifests/calico.yaml -O
+wget https://docs.projectcalico.org/manifests/calico.yaml  修改IPV4_cidr 10.244.0.0/16
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml 再k8s-app下行添加type：NodePort
 下载完成后执行
 kubectl apply -f calico.yaml
 	执行该yaml文件可能会遇到的问题
