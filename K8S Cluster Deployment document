@@ -88,6 +88,7 @@ docker pull nginx:latest
 然后可以通过命令或yaml文件的方式创建pod（推荐使用yaml） 
 【使用deploymnet控制器部署镜像】kubectl create deployment web --image-nginx --replicas=3
 【使用service暴露pod】kubectl expose deployment web --port=80 --target-port=80 --type=NodePort   （port为集群内部端口，target-port为镜像内端口）
+【Yaml文件的格式可以从kubernetes官网直接搜索】
 【使用yaml文件创建deployment】
 apiVersion: apps/v1
 kind: Deployment
