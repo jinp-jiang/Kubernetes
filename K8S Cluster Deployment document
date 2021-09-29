@@ -21,7 +21,7 @@ yum install -y docker kubelet kubeadm kubectl kubernetes-cni
 systemctl enable docker && systemctl start docker
 systemctl enable kubelet && systemctl start kubelet
 
-4.初始化master
+4.kuebadn init初始化master的整个过程
 【preflight】 环境检查swap是否关闭，内核大小是否足够，拉取组件镜像
 【certs】生成k8s、Etcd证书（启用Https）证书目录/etc/kubernetes/pki
 【kubeconfig】生成kubeconfig文件，认证文件
