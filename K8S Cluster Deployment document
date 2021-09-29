@@ -94,6 +94,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web2
+  namespace: default
 spec:
   replicas: 3
   selector:
@@ -112,6 +113,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: web2
+  namespace: default
 spec:
   selector:
     app: nginx2
@@ -222,3 +224,15 @@ kubectl get endpoints
 
 检查是否创建了副本控制器 ：ReplicationController：kubectl get rc
 检查是否创建了副本集 ：replicasets：kubectl get rs
+【命令行升级】kubectl set image deployment web nginx=nginx:1.18 -n namespace --record=true
+【增加】--record=true 方便后续查看升级版本的描述，否则描述为NONE
+【查看版本升级步骤】kubectl describe deployment web
+版本回滚
+【查看历史版本】kubectl rollout history deployment web
+【回滚到上一个版本】kubectl rollout undo deployment web
+【回滚到指定版本】kubectl rollout undo deployment web --to-revision=2
+水平扩容缩容
+【直接修改yaml文件】
+【命令行修改】kubectl scale deployment web --replicas=10
+【实时查看pod创建情况】kubectl get pods -n default -w 
+
