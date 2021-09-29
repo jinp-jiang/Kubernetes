@@ -88,9 +88,37 @@ docker pull nginx:latest
 然后可以通过命令或yaml文件的方式创建pod（推荐使用yaml） 
 【使用deploymnet控制器部署镜像】kubectl create deployment web --image-nginx --replicas=3
 【使用service暴露pod】kubectl expose deployment web --port=80 --target-port=80 --type=NodePort   （port为集群内部端口，target-port为镜像内端口）
-
-	6.1 命令直接创建
-		kubectl create deployment web --image-nginx --replicas=3
+【使用yaml文件创建deployment】
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx2
+  template:
+    metadata:
+      labels:
+        app: nginx2
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+【使用yaml文件创建service】
+apiVersion: v1
+kind: Service
+metadata:
+  name: web2
+spec:
+  selector:
+    app: nginx2
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
 	6.2 yaml文件创建
 		vim nginx.yaml
 #########内容############
@@ -188,6 +216,8 @@ spec:
 kubectl describe po
 查看pod节点日志
 kubectl logs -f pod_name
+查看service关联的pod
+kubectl get endpoints
 
 检查是否创建了副本控制器 ：ReplicationController：kubectl get rc
 检查是否创建了副本集 ：replicasets：kubectl get rs
