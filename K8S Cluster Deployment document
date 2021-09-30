@@ -216,7 +216,7 @@ spec:
     targetPort: 80
 #########内容############
 查看pod节点详情
-kubectl describe po
+kubectl describe pod
 查看pod节点日志
 kubectl logs -f pod_name
 查看service关联的pod
