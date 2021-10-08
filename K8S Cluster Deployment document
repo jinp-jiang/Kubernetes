@@ -235,4 +235,43 @@ kubectl get endpoints
 【直接修改yaml文件】
 【命令行修改】kubectl scale deployment web --replicas=10
 【实时查看pod创建情况】kubectl get pods -n default -w 
+【Pod运行多容器，共享存储及共享网络实践】
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-test
+  namespace: ms
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        volumeMounts:
+        - name: log
+          mountPath: /data
+      - name: bs
+        image: busybox
+        command:
+        - sleep
+        - 24h
+        volumeMounts:
+        - name: log
+          mountPath: /data2
+      volumes:
+      - name: log
+        emptyDir: {}
+【进入容器终端】kubectl exec -it <pod名称> -c <container名称> -n ms -- bash  【查看指定volumes下的路径文件是否是共享】
+【Pod管理命令】
+【命令创建pod】kubectl run my-pod --image==nginx:1.17
+【查看Pod节点详情】kubectl describe pod my-pod
+
 
