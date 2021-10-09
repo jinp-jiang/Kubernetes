@@ -114,14 +114,14 @@ kind: Service
 metadata:
   name: web2
   namespace: default
-spec:
+spec:    
   selector:
-    app: nginx2
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
-  type: NodePort
+    app: nginx2       指定关联的Pod标签
+  ports:      
+    - protocol: TCP   协议
+      port: 80        service端口
+      targetPort: 80  容器端口
+  type: NodePort      服务类型
 	6.2 yaml文件创建
 		vim nginx.yaml
 #########内容############
@@ -215,12 +215,9 @@ spec:
     port: 8080
     targetPort: 80
 #########内容############
-查看pod节点详情
-kubectl describe pod
-查看pod节点日志
-kubectl logs -f pod_name
-查看service关联的pod
-kubectl get endpoints
+【查看pod节点详情】kubectl describe pod
+【查看pod节点日志】kubectl logs -f pod_name
+【查看service关联的pod】kubectl get endpoints （kubectl get ep）
 
 检查是否创建了副本控制器 ：ReplicationController：kubectl get rc
 检查是否创建了副本集 ：replicasets：kubectl get rs
@@ -269,9 +266,20 @@ spec:
       volumes:
       - name: log
         emptyDir: {}
-【进入容器终端】kubectl exec -it <pod名称> -c <container名称> -n ms -- bash  【查看指定volumes下的路径文件是否是共享】
+【进入pod中的容器终端】kubectl exec -it <pod名称> -c <container名称> -n ms -- bash/sh  【查看指定volumes下的路径文件是否是共享】
 【Pod管理命令】
 【命令创建pod】kubectl run my-pod --image==nginx:1.17
 【查看Pod节点详情】kubectl describe pod my-pod
+【查看Pod中容器日志】kubectl logs my-pod -c nginx
+【查看yaml】kubectl get service web2 -o yaml
+【查看标签关联的pod】kubectl get pods -l app=nginx
+【查看某个Pod的标签】kubectl get pods --show-labels
+【service定义与创建】官网下载service.yaml模板，添加关联Pod标签
+【service的三种类型】
+ClusterIP：默认类型，只在集群内部使用，外部无法访问，ClusterIP基于四层转发，pod及node都可访问，但无法ping通
+NodePort：对外暴露的端口
+Loadbalancer：与NodePort相似，但暴露相对来说安全，不直接暴露任何node节点上的公网地址
+
+
 
 
