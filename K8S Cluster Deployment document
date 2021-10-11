@@ -277,8 +277,9 @@ spec:
 【service定义与创建】官网下载service.yaml模板，添加关联Pod标签
 【service的三种类型】
 ClusterIP：默认类型，只在集群内部使用，外部无法访问，ClusterIP基于四层转发，pod及node都可访问，但无法ping通
-NodePort：对外暴露的端口
+NodePort：对外暴露的端口，端口范围30000~32767.同时会新建集群内部IP，并支持外网访问节点IP：NodePort
 Loadbalancer：与NodePort相似，但暴露相对来说安全，不直接暴露任何node节点上的公网地址
+
 
 
 
