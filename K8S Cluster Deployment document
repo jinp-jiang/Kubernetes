@@ -279,6 +279,50 @@ spec:
 ClusterIP：默认类型，只在集群内部使用，外部无法访问，ClusterIP基于四层转发，pod及node都可访问，但无法ping通
 NodePort：对外暴露的端口，端口范围30000~32767.同时会新建集群内部IP，并支持外网访问节点IP：NodePort
 Loadbalancer：与NodePort相似，但暴露相对来说安全，不直接暴露任何node节点上的公网地址
+【service yaml文件】
+apiVersion: v1
+kind: Service
+metadata:
+  name: web2
+  namespace: default
+spec:    
+  selector:
+    app: nginx2       指定关联的Pod标签
+  ports:      
+    - protocol: TCP   协议
+      port: 80        集群内service端口
+      targetPort: 80  容器端口
+  type: NodePort      服务类型
+  
+【ingress yaml文件，可官网找文档】
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-wildcard-host
+spec:
+  rules:
+  - host: "foo.bar.com"
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+【部署完整的项目java-demo】
+【安装java运行环境】yum -y install java-1.8.0-openjdk maven
+【配置国内阿里云的maven仓库】vim /etc/maven/setting.xml  将百度到的maven配置添加到mirrors中
+【拉取git上的代码】git clone git地址
+【使用maven对解压后的包进行编译】mvn clean package -Dmaven.test.skip=true
+【编写dockerfile将war包打入镜像】
+From xxx/image:tag
+LABEL maintainer www.ctns.com
+RUN rm -rf /usr/local/tomcat/webapps/*
+ADD target/*.war /usr/local/tomcat/webapps/Root.war
+【使用dockerfile构建新的镜像】docker build -t java-demo:1.0 .
+【将新构建的镜像推送】docker push image:tag
+【编写k8s的yaml文件】引用新推送的镜像，创建deployment，并使用service（4层转发iptables）或者ingress（http/https）对外暴露端口即可
 
 
 
