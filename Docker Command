@@ -87,9 +87,20 @@ harbor_admin_password: Harbor12345 //admin 默认密码
 #vim /etc/docker/daemon.json
 {"insecure-registries":["ip"]}
 #systemctl restart docker
-【打标签】
-docker tag centos:7 IP/library/centos:7
+【启动所有的容器】
+#[/harbor]docker-compose up -d  //由于docker重启了，所以harbor挂掉了
+【查看所有的容器】
+docker-compose ps
+【关闭所有的容器】
+docker-compose stop
+【打标签重命名】
+docker tag nginx:v1 IP/library/nginx:v1
 【上传】
+docker login 私有仓库Harbor的IP
+docker push IP/library/nginx:v1
+【下载】
+docker pull 可以直接从Harbor复制拉取路径
+
 
 
 
