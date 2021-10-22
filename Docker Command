@@ -98,8 +98,11 @@ docker tag nginx:v1 IP/library/nginx:v1
 【上传】
 docker login 私有仓库Harbor的IP
 docker push IP/library/nginx:v1
-【下载】
+【下载二选一】
+其他node拉取也需要配置daemon.json的信任，同上
 docker pull 可以直接从Harbor复制拉取路径
+docker pull IP/library/nginx:v1
+
 
 
 
