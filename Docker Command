@@ -1,0 +1,96 @@
+【安装docker-ce最新版本】
+找到合适的repo源放到/etc/yum.repo.d/
+docker info|grep "Cgroup Driver" //需要与kubelte一致，不然kublete无法正常启动运行 
+echo {"exec-opts": ["native.cgroupdriver=systemd"]} > /etc/docker/daemon.json
+【Docker镜像加速器】vim /etc/docker/daemon.json 添加加速器地址，百度搜
+【列出镜像】docker ls
+【docker run -it -d 的区别】docker run -d -p 8888:80 nginx nginx --restart=always
+【查看容器的详细信息】docker inspect 容器
+【直接在容器内部执行命令】docker exec 容器 ls /
+【拉取镜像】docker pull
+【向仓库推送镜像】docker push
+【搜索镜像】docker search
+【构建dockerfile】docker build
+【将处理过的image提交成新镜像】docker commit 容器 命名
+【查看镜像历史】docker history
+【将镜像存储到tar包】docker save
+【将镜像tar包导入】docker load
+【删除镜像】docker rm
+【删除目前暂未使用到的镜像释放磁盘空间】docker container prune
+【将宿主机文件copy到容器】docker cp 宿主机文件 容器名:/path
+【查看容器日志】docker logs
+【查看容器端口】docker port
+【查看容器内部进程】docker top
+【查看容器资源利用率】docker stats --no-stream
+【启动/关闭/重启容器】docker start/stop/restart
+【docker ps】-a: 列出所有容器，包括退出的
+            -p: 列出所有容器ID
+            docker rm -rf $(docker ps -q)
+【容器数据持久化】
+【volumes示例】生成数据卷的路径：/var/lib/docker/volumes
+1.创建数据卷
+docker volume create 
+2.查看数据卷
+docker volume ls
+3.查看数据卷详情信息
+docker volume inspect 指定数据卷
+4.使用volumes二选一
+docker run -d --name=web -mount src=nginx-vol,dst=/usr/share/ngxin/html nginx
+docker run -d --name=web -v nginx-vol:/usr/share/ngxin/html nginx
+【bind mounts二选一】
+docker run -d --name=web -mount type=bind,src=/home/nginx,dst=/usr/share/ngxin/html nginx
+docker run -d --name web -p 8888:80 -v /home/nginx:/usr/share/nginx/html nginx
+jenkins gitlab使用docker的话数据持久化都是通过-v挂载到宿主机
+【Dockerfile 构建镜像】
+FROM centos:latest //引用镜像
+LABEL //打标签
+RUN yum -y install gcc //执行shell命令 构建容器时运行的命令
+COPY //复制文件到容器
+EXPOSE 80 //声明端口
+CMD ["run 1.sh"] //执行脚本 创建容器时启用的命令
+CMD ["nginx", "-g", "daemon off;"] 
+【构建nginx Dockerfile】
+FROM centos:7
+RUN yum -y install epel-relases && \
+    yum -y install nginx
+CMD ["nginx", "-g", "daemon off;"] 
+
+【构建镜像】docker build -t nginx:v1 -f Dockerfile 
+【使用构建镜像启动容器】docker run -d --name web -p 90:80 -v /home/nginx:/usr/share/nginx/html nginx:v1
+【使用源码构建nginx Dockerfile】
+FROM centos:7
+LABEL www.test-nginx.com
+
+RUN yum install -y gcc //安装依赖包
+ADD nginx-1.15.5.tar.gz //拷贝nginx源码安装包到容器
+RUN 
+ENV PATH $PATH:/usr/local/nginx/sbin
+COPY nginx.conf /usr/local/nginx/conf/nginx.conf
+WORKDIR /usr/local/nginx
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"] 
+【镜像仓库Harbor部署】
+【离线软件包链接】https://github.com/goharbor/harbor/releases/tag/v2.3.3
+                https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-linux-aarch64
+【部署Harbor】
+#mv docker-compose-linux-aarch64 /us/bin/docker-compose
+#tar zxvf harbor-offline-installer-v2.3.3.tgz
+#cd harbor
+#cp harbot.yml.tmpl harbor.yml
+#vim harbor.yml
+hostname: //修改成IP
+https //全部注释
+harbor_admin_password: Harbor12345 //admin 默认密码
+#./prepare //编译
+#./install.sh //安装过程中根据报错解决问题，安装成功后即可访问
+【配置镜像仓库可信任】
+#vim /etc/docker/daemon.json
+{"insecure-registries":["ip"]}
+#systemctl restart docker
+【打标签】
+docker tag centos:7 IP/library/centos:7
+【上传】
+
+
+
+
