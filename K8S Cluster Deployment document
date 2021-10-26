@@ -66,6 +66,11 @@ wget https://docs.projectcalico.org/manifests/calico.yaml  修改IPV4_cidr 10.24
 wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml  再k8s-app下行添加type：NodePort
 下载完成后执行
 kubectl apply -f calico.yaml
+【会出现calico节点ready状态0/1】pods 节点报错信息calico/node is not ready: BIRD is not ready: BGP not established with 10.0.3.10
+【解决方法】在官网calico.yaml中，calico节点部分添加
+- name: IP_AUTODETECTION_METHOD
+  value: "interface=eth0"
+  
 kubectl apply -f recommended.yaml （安装dashboard UI）
 kubectl get pods,svc -n 【namespace的名字】
 创建用户
