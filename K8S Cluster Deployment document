@@ -63,7 +63,7 @@ kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.
 5.安装节点网络插件
 在Calico官网 上下载calico.yaml文件
 wget https://docs.projectcalico.org/manifests/calico.yaml  修改IPV4_cidr 10.244.0.0/16
-wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml  再k8s-app下行添加type：NodePort
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml  在service板块k8s-app下行添加type：NodePort
 下载完成后执行
 kubectl apply -f calico.yaml
 【会出现calico节点ready状态0/1】pods 节点报错信息calico/node is not ready: BIRD is not ready: BGP not established with 10.0.3.10
