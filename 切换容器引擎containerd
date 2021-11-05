@@ -1,0 +1,51 @@
+切换容器引擎为Containerd
+参考资料：https://kubernetes.io/zh/docs/setup/production-environment/container-runtimes/#containerd
+1、配置先决条件
+cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# 设置必需的 sysctl 参数，这些参数在重新启动后仍然存在。
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+sudo sysctl --system
+2、安装containerd
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+yum install -y containerd.io
+mkdir -p /etc/containerd
+containerd config default > /etc/containerd/config.toml
+3、修改配置文件
+•pause镜像设置过阿里云镜像仓库地址
+•cgroups驱动设置为systemd
+•拉取Docker Hub镜像配置加速地址设置为阿里云镜像仓库地址
+vi /etc/containerd/config.toml
+   [plugins."io.containerd.grpc.v1.cri"]
+      sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.2"  
+         ...
+         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+             SystemdCgroup = true
+             ...
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+          endpoint = ["https://b9pmyelo.mirror.aliyuncs.com"]
+          
+systemctl restart containerd
+4、配置kubelet使用containerd
+vi /etc/sysconfig/kubelet 
+KUBELET_EXTRA_ARGS=--container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --cgroup-driver=systemd
+
+systemctl restart kubelet
+5、验证
+kubectl get node -o wide
+
+k8s-node1  xxx  containerd://1.4.4
