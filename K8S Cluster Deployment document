@@ -330,6 +330,14 @@ ADD target/*.war /usr/local/tomcat/webapps/Root.war
 【将新构建的镜像推送】docker push image:tag
 【编写k8s的yaml文件】引用新推送的镜像，创建deployment，并使用service（4层转发iptables）或者ingress（http/https）对外暴露端口即可
 
+【配置metrics日志监控】官网下载https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+【需要更改跳过证书认证】vim components.yaml 更改image部分为国内，并添加- --kubelet-insecure-tls
+			kubectl apply -f components.yaml
+【查看POD日志并输出到/opt/web】kubectl logs podname -n namespace | grep Error > /var/web
+【查看制定label使用cpu最高的pod，记录到/opt/cpu】kubectl top pods -l app=web -n namespace --sort-by='cpu' | awk 'NR==2{print $1}'
+
+
+
 
 
 
