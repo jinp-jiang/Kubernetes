@@ -229,13 +229,14 @@ spec:
 【查看pod节点日志】kubectl logs -f pod_name
 【查看service关联的pod】kubectl get endpoints （kubectl get ep）
 
-检查是否创建了副本控制器 ：ReplicationController：kubectl get rc
-检查是否创建了副本集 ：replicasets：kubectl get rs
+【检查是否创建了副本控制器】 ：ReplicationController：kubectl get rc
+【检查是否创建了副本集】 ：replicasets：kubectl get rs
 【命令行升级】kubectl set image deployment web nginx=nginx:1.18 -n namespace --record=true
 【增加】--record=true 方便后续查看升级版本的描述，否则描述为NONE
 【查看版本升级步骤】kubectl describe deployment web
 版本回滚
 【查看历史版本】kubectl rollout history deployment web
+【通过get rs版本查看】kubectl describe rs rs名称 | grep Image/revision 
 【回滚到上一个版本】kubectl rollout undo deployment web
 【回滚到指定版本】kubectl rollout undo deployment web --to-revision=2
 水平扩容缩容
