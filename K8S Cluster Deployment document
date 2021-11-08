@@ -59,6 +59,10 @@ kubeadm init --apiserver-advertise-address=10.0.3.5 --image-repository registry.
 	--discovery-token-ca-cert-hash sha256:1532efc0f07b5b3d74acaf0729b7d3e461490ddc4b87671abd257f9a0ce0481b 
 	4.5 其他节点如需加入需要执行
 		kubeadm join --token <token> <master-ip>
+		
+【kubectl加入source源可补全命令】
+yum -y install bash-completion
+source <(kubectl completion bash)
 
 5.安装节点网络插件
 在Calico官网 上下载calico.yaml文件
@@ -335,6 +339,7 @@ ADD target/*.war /usr/local/tomcat/webapps/Root.war
 			kubectl apply -f components.yaml
 【查看POD日志并输出到/opt/web】kubectl logs podname -n namespace | grep Error > /var/web
 【查看制定label使用cpu最高的pod，记录到/opt/cpu】kubectl top pods -l app=web -n namespace --sort-by='cpu' | awk 'NR==2{print $1}'
+【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
 
 
 
