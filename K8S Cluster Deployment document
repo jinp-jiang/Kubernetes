@@ -286,7 +286,11 @@ spec:
 livenessProbe	
 readinessProbe
 startupProbe
+
 【环境变量env】
+
+【Init Container初始化工作】
+【静态Pod】
 
 【查看yaml】kubectl get service web2 -o yaml
 【查看标签关联的pod】kubectl get pods -l app=nginx
