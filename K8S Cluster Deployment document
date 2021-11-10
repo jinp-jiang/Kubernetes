@@ -281,7 +281,13 @@ spec:
 【Pod管理命令】
 【命令创建pod】kubectl run my-pod --image==nginx:1.17
 【查看Pod节点详情】kubectl describe pod my-pod
-【查看Pod中容器日志】kubectl logs my-pod -c nginx
+【查看Pod中容器日志】kubectl logs my-pod -c nginx -f
+【Pod对象重启策略+健康检查(应用自修复)】
+livenessProbe	
+readinessProbe
+startupProbe
+【环境变量env】
+
 【查看yaml】kubectl get service web2 -o yaml
 【查看标签关联的pod】kubectl get pods -l app=nginx
 【查看某个Pod的标签】kubectl get pods --show-labels
