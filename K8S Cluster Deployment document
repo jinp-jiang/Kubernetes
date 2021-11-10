@@ -277,7 +277,7 @@ spec:
       volumes:
       - name: log
         emptyDir: {}
-【进入pod中的容器终端】kubectl exec -it <pod名称> -c <container名称> -n ms -- bash/sh  【查看指定volumes下的路径文件是否是共享】
+【进入pod中的容器终端】kubectl exec -it <pod名称> -c <container名称> -n namespace -- bash/sh  【查看指定volumes下的路径文件是否是共享】
 【Pod管理命令】
 【命令创建pod】kubectl run my-pod --image==nginx:1.17
 【查看Pod节点详情】kubectl describe pod my-pod
