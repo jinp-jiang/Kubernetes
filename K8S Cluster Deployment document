@@ -282,15 +282,225 @@ spec:
 【命令创建pod】kubectl run my-pod --image==nginx:1.17
 【查看Pod节点详情】kubectl describe pod my-pod
 【查看Pod中容器日志】kubectl logs my-pod -c nginx -f
-【Pod对象重启策略+健康检查(应用自修复)】
-livenessProbe	
-readinessProbe
-startupProbe
+【Pod对象重启策略restartPolicy: Always】
+• Always：当容器终止退出后，总是重启容器，默认策略。
+• OnFailure：当容器异常退出（退出状态码非0）时，才重启容器。
+• Never：当容器终止退出，从不重启容器。
+【Pod健康检查】
+• livenessProbe（存活检查）：如果检查失败，将杀死容器，根据Pod的restartPolicy来操作。
+• readinessProbe（就绪检查）：如果检查失败，Kubernetes会把Pod从service endpoints中剔除。 
+• startupProbe（启动检查）：检查成功才由存活检查接手，用于保护慢启动容器
+【livenessProbe】如果检查失败，将杀死容器，根据Pod的restartPolicy来操作
+【exec】1.检查容器中文件是否创建，如果没有被检测到pod重启
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: liveness-exec
+spec:
+  containers:
+  - name: liveness
+    image: busybox
+    args:
+    - /bin/sh
+    - -c
+    - touch /tmp/test.sock; sleep 12h
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/test.sock
+      initialDelaySeconds: 5  容器启动后5s开始检查/tmp/test.sock 是否创建
+      periodSeconds: 5        以后每次检查间隔5s检查
+【tcpSocket】 2.探测端口
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: probe-test
+  name: probe-test
+spec:
+  containers:
+  - image: nginx
+    name: probe-test
+    ports:
+    - containerPort: 80
+    livenessProbe:
+      tcpSocket:
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
+    readinessProbe:
+      tcpSocket:
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
+【httpGet】3.发送HTTP请求，返回200-400范围状态码为成功
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: test-readiness
+  name: test-readiness
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: test-readiness
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: test-readiness
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+	livenessProbe:
+	  httpGet:
+	    port: 80
+	    path: /index.html
+	  initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+	    port: 80
+	    path: /index.html
+          initialDelaySeconds: 5
+          periodSeconds: 5
+       
+ 【readinessProbe例子deployment】如果检查失败，Kubernetes会把Pod从service endpoints中剔除
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: test-readiness
+  name: test-readiness
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: test-readiness
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: test-readiness
+    spec:
+      containers:
+      - image: busybox
+        name: busybox
+        args:
+        - /bin/sh
+        - -c
+        - touch /tmp/test.sock; sleep 24h
+	livenessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/test.sock
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/test.sock
+          initialDelaySeconds: 5
+          periodSeconds: 5
+【startupProbe】检查成功才由存活检查接手，用于保护慢启动容器
 
-【环境变量env】
+【pod引用环境变量env】
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-envars-fieldref
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+    - name: test-container-bs
+      image: busybox
+      command:
+      - sleep
+      - 24h
+      env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: ABC
+          value: "12345"
 
-【Init Container初始化工作】
-【静态Pod】
+【Init Container初始化工作】deployment例子
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: init-test
+  name: init-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: init-test
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: init-test
+    spec:
+      initContainers:
+      - name: bs
+        image: busybox
+        command:
+        - wget
+        - "-O"
+        - "/opt/index.html"
+        - http://www.aliangedu.cn
+        volumeMounts:
+        - name: wwwroot
+          mountPath: "/opt"
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: wwwroot
+          mountPath: /usr/share/nginx/html/
+      volumes:
+      - name: wwwroot
+        emptyDir: {}
+
+【静态pod特点】
+• Pod由特定节点上的kubelet管理
+• 不能使用控制器
+• Pod名称标识当前节点名称
+【静态Pod配置路径】
+vim /var/lib/kubelet/config.yaml 查看kubelet配置文件
+...
+staticPodPath: /etc/kubernetes/manifests 直接将yaml文件放置该路径下即可，kubelet会自动创建
 
 【查看yaml】kubectl get service web2 -o yaml
 【查看标签关联的pod】kubectl get pods -l app=nginx
@@ -351,10 +561,3 @@ ADD target/*.war /usr/local/tomcat/webapps/Root.war
 【查看POD日志并输出到/opt/web】kubectl logs podname -n namespace | grep Error > /var/web
 【查看制定label使用cpu最高的pod，记录到/opt/cpu】kubectl top pods -l app=web -n namespace --sort-by='cpu' | awk 'NR==2{print $1}'
 【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
-
-
-
-
-
-
-
