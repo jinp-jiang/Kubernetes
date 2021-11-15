@@ -86,19 +86,19 @@ KUBELET_EXTRA_ARGS="--fail-swap-on=false"
 ​		根据查询结果，使用docker search 来下载对应版本的images
 
 ```
-    docker pull louwy001/kube-scheduler:v1.21.0
+ docker pull louwy001/kube-scheduler:v1.21.0
 
-	docker pull louwy001/kube-proxy:v1.21.0
+ docker pull louwy001/kube-proxy:v1.21.0
 
- 	docker pull louwy001/pause:3.4.1
+ docker pull louwy001/pause:3.4.1
    	
-    docker pull louwy001/etcd:3.4.13-0
+ docker pull louwy001/etcd:3.4.13-0
    	
-   	docker pull louwy001/coredns:v1.8.0
+ docker pull louwy001/coredns:v1.8.0
+  	
+ docker pull louwy001/coredns:v1.8
    	
-   	docker pull louwy001/coredns:v1.8
-   	
-   	docker pull louwy001/coredns-coredns:v1.8.0
+ docker pull louwy001/coredns-coredns:v1.8.0
 ```
 
 ​		下载完成后，使用docker tag [已存在信息] [要求命名]
@@ -256,12 +256,12 @@ spec:
         - name: nginx
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
-	      ports:
+	  ports:
             - containerPort: 80
-	      env:
+	  env:
             - name: TZ
               value: Asia/Shanghai
-	      volumeMounts:
+	  volumeMounts:
             - name: volume-data
               mountPath: "/usr/share/nginx/html"
             - name: nginx-conf
@@ -491,18 +491,18 @@ spec:
       containers:
       - image: nginx
         name: nginx
-	  livenessProbe:
-	    httpGet:
-	      port: 80
-	      path: /index.html
-	    initialDelaySeconds: 5
-        periodSeconds: 5
-      readinessProbe:
-        httpGet:
-	      port: 80
-	      path: /index.html
-        initialDelaySeconds: 5
-        periodSeconds: 5
+	livenessProbe:
+	  httpGet:
+	    port: 80
+	    path: /index.html
+	  initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+	    port: 80
+	    path: /index.html
+          initialDelaySeconds: 5
+          periodSeconds: 5
 ```
 
 #####  【readinessProbe例子deployment】如果检查失败，Kubernetes会把Pod从service endpoints中剔除
@@ -534,20 +534,20 @@ spec:
         - /bin/sh
         - -c
         - touch /tmp/test.sock; sleep 24h
-	  livenessProbe:
-        exec:
-          command:
-          - cat
-          - /tmp/test.sock
-        initialDelaySeconds: 5
-        periodSeconds: 5
-      readinessProbe:
-        exec:
-          command:
-          - cat
-          - /tmp/test.sock
-        initialDelaySeconds: 5
-        periodSeconds: 5
+	livenessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/test.sock
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/test.sock
+          initialDelaySeconds: 5
+          periodSeconds: 5
 ```
 
 ##### 【startupProbe】检查成功才由存活检查接手，用于保护慢启动容器
