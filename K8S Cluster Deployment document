@@ -558,6 +558,28 @@ ADD target/*.war /usr/local/tomcat/webapps/Root.war
 【配置metrics日志监控】官网下载https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 【需要更改跳过证书认证】vim components.yaml 更改image部分为国内，并添加- --kubelet-insecure-tls
 			kubectl apply -f components.yaml
+【pod资源调度】
+指定pod只用node节点资源
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: request-pod
+  name: request-pod
+spec:
+  containers:
+  - image: nginx
+    name: request-pod
+    resources:
+      requests:
+        memory: 100M  所给内存大小，不得大于limits
+        cpu: 0.5m     1核等于1000m
+      limits:
+        memory: 500M
+        cpu: 1m
+【查看node节点占用资源】kubectl describe node worknode1
 【查看POD日志并输出到/opt/web】kubectl logs podname -n namespace | grep Error > /var/web
 【查看制定label使用cpu最高的pod，记录到/opt/cpu】kubectl top pods -l app=web -n namespace --sort-by='cpu' | awk 'NR==2{print $1}'
 【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
