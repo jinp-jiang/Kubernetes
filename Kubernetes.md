@@ -489,16 +489,16 @@ spec:
       containers:
       - image: nginx
         name: nginx
-	  livenessProbe:
-	    httpGet:
-	      port: 80
-	      path: /index.html
-	    initialDelaySeconds: 5
+      livenessProbe:
+	httpGet:
+	  port: 80
+	  path: /index.html
+	initialDelaySeconds: 5
         periodSeconds: 5
       readinessProbe:
         httpGet:
-	      port: 80
-	      path: /index.html
+	  port: 80
+	  path: /index.html
         initialDelaySeconds: 5
         periodSeconds: 5
 ```
@@ -532,7 +532,7 @@ spec:
         - /bin/sh
         - -c
         - touch /tmp/test.sock; sleep 24h
-	  livenessProbe:
+      livenessProbe:
         exec:
           command:
           - cat
