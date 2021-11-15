@@ -257,15 +257,15 @@ spec:
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
 	  ports:
-            - containerPort: 80
+          - containerPort: 80
 	  env:
-            - name: TZ
-              value: Asia/Shanghai
+          - name: TZ
+            value: Asia/Shanghai
 	  volumeMounts:
-            - name: volume-data
-              mountPath: "/usr/share/nginx/html"
-            - name: nginx-conf
-              mountPath: "/etc/nginx/conf.d"
+          - name: volume-data
+            mountPath: "/usr/share/nginx/html"
+          - name: nginx-conf
+            mountPath: "/etc/nginx/conf.d"
       volumes:
         - name: volume-data
           hostPath:
