@@ -743,11 +743,31 @@ spec:
 
 【查看node节点占用资源】kubectl describe node worknode1
 
-#####   相关课后作业
+#####   相关课后作业【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
+
+【新建一个命名空间，创建一个deployment并暴露service】kubectl create ns aliang-cka;kubectl create deployment web --image=nginx -n aliang-cka;kubctl expose deployment web --port=80 --target-port=80 --type=NodePort -n aliang-cka
+
+【列出指定命名空间下指定标签pod】kubectl get pod -l  k8s-app=kube-dns -n kube-system
 
 【查看POD日志并输出到/opt/web】kubectl logs podname -n namespace | grep Error > /var/web
 
 【查看制定label使用cpu最高的pod，记录到/opt/cpu】kubectl top pods -l app=web -n namespace --sort-by='cpu' | awk 'NR==2{print $1}'
 
-【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
+【创建一个deployment副本数为3，然后滚动更新镜像版本并记录更新，最后再回滚到上一个版本】
+
+kubectl create deployment nginx --image=nginx:1.16 --replicas=3
+
+kubectl set image deployment nginx --nginx=nginx:1.17 --record=true
+
+kubectl rollout history deployment nginx
+
+kubectl rollout undo deployment  nginx --to-revision=3
+
+【给web deployment扩容副本数3】kubetcl scale deployment web --replicas=3 
+
+【把deployment输出到json文件】kubectl create deployment web --image=nginx -o json --dry-run=client > test.json 
+
+【生成一个deployment yaml文件保存到/opt/deploy.yaml】kubectl create deployment web --image=nginx -o yaml --dry-run=client > /opt/deploy.yaml 
+
+更改选择器标签及pod标签为app_env_stage=dev
 
