@@ -85,19 +85,21 @@ KUBELET_EXTRA_ARGS="--fail-swap-on=false"
 
 ​		根据查询结果，使用docker search 来下载对应版本的images
 
-​		docker pull louwy001/kube-scheduler:v1.21.0
+```
+    docker pull louwy001/kube-scheduler:v1.21.0
 
-​		docker pull louwy001/kube-proxy:v1.21.0
+	docker pull louwy001/kube-proxy:v1.21.0
 
-   	 docker pull louwy001/pause:3.4.1
-
-   	 docker pull louwy001/etcd:3.4.13-0
-
-   	 docker pull louwy001/coredns:v1.8.0
-
-   	 docker pull louwy001/coredns:v1.8
-
-   	 docker pull louwy001/coredns-coredns:v1.8.0
+ 	docker pull louwy001/pause:3.4.1
+   	
+    docker pull louwy001/etcd:3.4.13-0
+   	
+   	docker pull louwy001/coredns:v1.8.0
+   	
+   	docker pull louwy001/coredns:v1.8
+   	
+   	docker pull louwy001/coredns-coredns:v1.8.0
+```
 
 ​		下载完成后，使用docker tag [已存在信息] [要求命名]
 
@@ -254,12 +256,12 @@ spec:
         - name: nginx
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
-	  ports:
+	      ports:
             - containerPort: 80
-	  env:
+	      env:
             - name: TZ
               value: Asia/Shanghai
-	  volumeMounts:
+	      volumeMounts:
             - name: volume-data
               mountPath: "/usr/share/nginx/html"
             - name: nginx-conf
@@ -489,16 +491,16 @@ spec:
       containers:
       - image: nginx
         name: nginx
-      livenessProbe:
-	httpGet:
-	  port: 80
-	  path: /index.html
-	initialDelaySeconds: 5
+	  livenessProbe:
+	    httpGet:
+	      port: 80
+	      path: /index.html
+	    initialDelaySeconds: 5
         periodSeconds: 5
       readinessProbe:
         httpGet:
-	  port: 80
-	  path: /index.html
+	      port: 80
+	      path: /index.html
         initialDelaySeconds: 5
         periodSeconds: 5
 ```
@@ -532,7 +534,7 @@ spec:
         - /bin/sh
         - -c
         - touch /tmp/test.sock; sleep 24h
-      livenessProbe:
+	  livenessProbe:
         exec:
           command:
           - cat
@@ -713,6 +715,33 @@ ADD target/*.war /usr/local/tomcat/webapps/Root.war
 【需要更改跳过证书认证】vim components.yaml 更改image部分为国内，并添加- --kubelet-insecure-tls
 
 ​			kubectl apply -f components.yaml
+
+##### pod资源调度
+
+指定pod只用node节点资源
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: request-pod
+  name: request-pod
+spec:
+  containers:
+  - image: nginx
+    name: request-pod
+    resources:
+      requests:
+        memory: 100M  所给内存大小，不得大于limits
+        cpu: 0.5m     1核等于1000m
+      limits:
+        memory: 500M
+        cpu: 1m
+```
+
+【查看node节点占用资源】kubectl describe node worknode1
 
 #####   相关课后作业
 
