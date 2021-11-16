@@ -86,19 +86,13 @@ KUBELET_EXTRA_ARGS="--fail-swap-on=false"
 ​		根据查询结果，使用docker search 来下载对应版本的images
 
 ```
- docker pull louwy001/kube-scheduler:v1.21.0
-
- docker pull louwy001/kube-proxy:v1.21.0
-
- docker pull louwy001/pause:3.4.1
-   	
- docker pull louwy001/etcd:3.4.13-0
-   	
- docker pull louwy001/coredns:v1.8.0
-  	
- docker pull louwy001/coredns:v1.8
-   	
- docker pull louwy001/coredns-coredns:v1.8.0
+docker pull louwy001/kube-scheduler:v1.21.0
+docker pull louwy001/kube-proxy:v1.21.0
+docker pull louwy001/pause:3.4.1
+docker pull louwy001/etcd:3.4.13-0
+docker pull louwy001/coredns:v1.8.0
+docker pull louwy001/coredns:v1.8
+docker pull louwy001/coredns-coredns:v1.8.0
 ```
 
 ​		下载完成后，使用docker tag [已存在信息] [要求命名]
@@ -213,6 +207,7 @@ spec:
       containers:
       - image: nginx
         name: nginx
+        resources: {}
 ```
 
 【使用yaml文件创建service】kubectl expose deployment web --port=80 --target-port=80 --type=NodePort --dry-run=client -o yaml > nginx-svc.yaml
@@ -256,16 +251,16 @@ spec:
         - name: nginx
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
-	  ports:
-          - containerPort: 80
-	  env:
-          - name: TZ
-            value: Asia/Shanghai
-	  volumeMounts:
-          - name: volume-data
-            mountPath: "/usr/share/nginx/html"
-          - name: nginx-conf
-            mountPath: "/etc/nginx/conf.d"
+	      ports:
+            - containerPort: 80
+	      env:
+            - name: TZ
+              value: Asia/Shanghai
+	      volumeMounts:
+            - name: volume-data
+              mountPath: "/usr/share/nginx/html"
+            - name: nginx-conf
+              mountPath: "/etc/nginx/conf.d"
       volumes:
         - name: volume-data
           hostPath:
@@ -453,7 +448,7 @@ spec:
   - image: nginx
     name: probe-test
     ports:
-    - containerPort: 80
+    - containerPort: 8080
     livenessProbe:
       tcpSocket:
         port: 80
@@ -491,16 +486,16 @@ spec:
       containers:
       - image: nginx
         name: nginx
-	livenessProbe:
-	  httpGet:
-	    port: 80
-	    path: /index.html
-	  initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            port: 80
+            path: /index.html
+          initialDelaySeconds: 5
           periodSeconds: 5
         readinessProbe:
           httpGet:
-	    port: 80
-	    path: /index.html
+            port: 80
+            path: /index.html
           initialDelaySeconds: 5
           periodSeconds: 5
 ```
@@ -534,20 +529,20 @@ spec:
         - /bin/sh
         - -c
         - touch /tmp/test.sock; sleep 24h
-	livenessProbe:
-          exec:
-            command:
-            - cat
-            - /tmp/test.sock
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - cat
-            - /tmp/test.sock
-          initialDelaySeconds: 5
-          periodSeconds: 5
+	  livenessProbe:
+        exec:
+          command:
+          - cat
+          - /tmp/test.sock
+        initialDelaySeconds: 5
+        periodSeconds: 5
+      readinessProbe:
+        exec:
+          command:
+          - cat
+          - /tmp/test.sock
+        initialDelaySeconds: 5
+        periodSeconds: 5
 ```
 
 ##### 【startupProbe】检查成功才由存活检查接手，用于保护慢启动容器
@@ -743,7 +738,95 @@ spec:
 
 【查看node节点占用资源】kubectl describe node worknode1
 
-#####   相关课后作业【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
+【添加节点标签】kubectl label node worknode1 disk=ssd
+
+【查看节点污点】kubectl describe nodes | grep Taint
+
+【nodeSelector节点选择器】Pod可按照node节点标签（key:vaule）进行选择
+
+【nodeAffinity更细致对标签做罗辑上的判断】详情可参照官网例子
+
+##### required（必须满足）：
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd            
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+##### preferred（尝试满足）：
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd          
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+【Taint污点设置】避免pod调度到worknode1
+
+NoSchedule：一定不能被调度
+
+PreferNoSchedule：尽量不被调度，非必要配置容忍
+
+NoExecute：不仅不会被调度，还会驱逐Node上已有的Pod
+
+kubectl taint node work-node1 key=vaule:NoSchedule
+
+【Tolerations污点容忍】详情可参照官网例子
+
+```yaml
+tolerations:
+- key: "key1"
+  operator: "Equal"
+  value: "value1"
+  effect: "NoSchedule"
+```
+
+```yaml
+tolerations:
+- key: "key1"
+  operator: "Exists"
+  effect: "NoSchedule"
+```
+
+【nodeName】该调度不经过调度器，直接指定node节点名nodeName: worknode1
+
+
+
+#####   相关课后作业
+
+#####   【查看yaml相关名词拼写可使用explain】kubectl explain deployment/pods.spec.template
 
 【新建一个命名空间，创建一个deployment并暴露service】kubectl create ns aliang-cka;kubectl create deployment web --image=nginx -n aliang-cka;kubctl expose deployment web --port=80 --target-port=80 --type=NodePort -n aliang-cka
 
@@ -770,4 +853,56 @@ kubectl rollout undo deployment  nginx --to-revision=3
 【生成一个deployment yaml文件保存到/opt/deploy.yaml】kubectl create deployment web --image=nginx -o yaml --dry-run=client > /opt/deploy.yaml 
 
 更改选择器标签及pod标签为app_env_stage=dev
+
+【创建一个pod，分配到指定标签node上】kubectl label node worknode1 disk=ssd
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: web
+  name: web
+spec:
+  containers:
+  - image: nginx
+    name: web
+  nodeSelector:
+    disk: "ssd"
+```
+
+【确保在每个节点上运行一个POD】
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: daemonset-test
+  name: daemonset-test
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+      tolerations:
+        - operator: "Exists"
+          effect: "NoSchedule"
+```
+
+
+
+
+
+
+
+
 
