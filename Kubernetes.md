@@ -251,16 +251,16 @@ spec:
         - name: nginx
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
-	  ports:
-          - containerPort: 80
-	  env:
-          - name: TZ
-            value: Asia/Shanghai
-	    volumeMounts:
-          - name: volume-data
-            mountPath: "/usr/share/nginx/html"
-          - name: nginx-conf
-            mountPath: "/etc/nginx/conf.d"
+	      ports:
+            - containerPort: 80
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+	      volumeMounts:
+            - name: volume-data
+              mountPath: "/usr/share/nginx/html"
+            - name: nginx-conf
+              mountPath: "/etc/nginx/conf.d"
       volumes:
         - name: volume-data
           hostPath:
@@ -424,13 +424,13 @@ spec:
     - /bin/sh
     - -c
     - touch /tmp/test.sock; sleep 12h
-    livenessProbe:
-      exec:
-        command:
-        - cat
-        - /tmp/test.sock
-      initialDelaySeconds: 5  容器启动后5s开始检查/tmp/test.sock 是否创建
-      periodSeconds: 5        以后每次检查间隔5s检查
+  livenessProbe:
+    exec:
+      command:
+      - cat
+      - /tmp/test.sock
+    initialDelaySeconds: 5  容器启动后5s开始检查/tmp/test.sock 是否创建
+    periodSeconds: 5        以后每次检查间隔5s检查
 ```
 
 ##### 【tcpSocket】 2.探测端口
@@ -821,6 +821,8 @@ tolerations:
 ```
 
 【nodeName】该调度不经过调度器，直接指定node节点名nodeName: worknode1
+
+【DaemonSet】在每个节点上运行；新加入的node也同样自动运行一个pod；应用于监控agent、网络插件、日志agent
 
 
 
