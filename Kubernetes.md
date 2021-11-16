@@ -251,16 +251,16 @@ spec:
         - name: nginx
           image: docker.io/nginx:latest
           imagePullPolicy: IfNotPresent
-	      ports:
-            - containerPort: 80
-	      env:
-            - name: TZ
-              value: Asia/Shanghai
-	      volumeMounts:
-            - name: volume-data
-              mountPath: "/usr/share/nginx/html"
-            - name: nginx-conf
-              mountPath: "/etc/nginx/conf.d"
+	  ports:
+          - containerPort: 80
+	  env:
+          - name: TZ
+            value: Asia/Shanghai
+	    volumeMounts:
+          - name: volume-data
+            mountPath: "/usr/share/nginx/html"
+          - name: nginx-conf
+            mountPath: "/etc/nginx/conf.d"
       volumes:
         - name: volume-data
           hostPath:
@@ -529,7 +529,7 @@ spec:
         - /bin/sh
         - -c
         - touch /tmp/test.sock; sleep 24h
-	  livenessProbe:
+      livenessProbe:
         exec:
           command:
           - cat
