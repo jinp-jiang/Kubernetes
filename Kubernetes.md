@@ -856,6 +856,31 @@ kubectl rollout undo deployment  nginx --to-revision=3
 
 更改选择器标签及pod标签为app_env_stage=dev
 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: web
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app_env_stage: dev
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app_env_stage: dev
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+```
+
 【创建一个pod，分配到指定标签node上】kubectl label node worknode1 disk=ssd
 
 ```yaml
