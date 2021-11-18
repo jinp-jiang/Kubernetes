@@ -740,8 +740,6 @@ spec:
 
 【添加节点标签】kubectl label node worknode1 disk=ssd
 
-【查看节点污点】kubectl describe nodes | grep Taint
-
 【nodeSelector节点选择器】Pod可按照node节点标签（key:vaule）进行选择
 
 【nodeAffinity更细致对标签做罗辑上的判断】详情可参照官网例子
@@ -803,6 +801,10 @@ NoExecute：不仅不会被调度，还会驱逐Node上已有的Pod
 
 kubectl taint node work-node1 key=vaule:NoSchedule
 
+【查看节点污点】kubectl describe nodes | grep Taint
+
+【删除节点污点】kubectl taint node worknode1 key-
+
 【Tolerations污点容忍】详情可参照官网例子
 
 ```yaml
@@ -823,6 +825,62 @@ tolerations:
 【nodeName】该调度不经过调度器，直接指定node节点名nodeName: worknode1
 
 【DaemonSet】在每个节点上运行；新加入的node也同样自动运行一个pod；应用于监控agent、网络插件、日志agent
+
+##### Service（服务发现、负载均衡）
+
+【Pod与service的关系】service通过标签关联pod；service使用iptables或ipvs为一组pod提供负载均衡能力
+
+【查看service与pod关联】kubectl get endpoints
+
+【一个pod定义多端口暴露service】
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web2
+spec:
+  selector:
+    app: nginx2
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 443      
+  type: NodePort
+```
+
+【service常用的三种类型】
+
+ClusterIP：集群内部使用
+
+NodePort：对外暴露应用
+
+LoadBalancer：对外暴露应用，适用于公有云
+
+【修改kube-proxy 创建规则模式mode】kubectl edit configmaps kube-proxy -n kube-system
+
+【查看iptables路由规则】
+
+```
+iptables-save | grep [ServiceName]
+```
+
+【查看ipvs路由规则】
+
+```
+yum -y install ipvsadm
+
+ipvsadm -L -n
+```
+
+【service代理流量包流程】客户端 -> NodePort/ClusterIP（节点中的iptables/ipvs路由规则） -> 分布在各节点的pod   
+
+集群中所有节点上的路由规则试一致的，所以访问任意节点IP:NodePort都会被转发到pod
 
 
 
@@ -925,11 +983,20 @@ spec:
           effect: "NoSchedule"
 ```
 
+【给一个pod创建service，并可以通过ClusterIP/NodePort访问】
 
+```
+kubectl run web --image=nginx
+kubectl expose pod web --port=80 --target-port=80 --type=NodePort --name=web-service
+```
 
+【列出命名空间下某个service关联的所有pod，并将pod名称写到/opt/pod.txt中使用标签过滤】
 
-
-
-
-
+```
+1.获取service的选择器，也就是pod的标签
+方法1：kubectl get svc web-service -o wide -n default | awk 'NR==2{print $7}'
+方法2：kubectl describe svc web-service -n default | grep Selector | awk '{print $2}'
+2.使用获取到的pod标签筛选出pod名称
+kubectl get pod -l run=web -n default | sed '1d' | awk '{print $1}' > /opt/pod.txt
+```
 
