@@ -828,6 +828,10 @@ tolerations:
 
 ##### Service（服务发现、负载均衡）
 
+【负载均衡】iptables和ipvs执行创建相关规则
+
+【服务发现】使用endpoint控制器实现（根据iptables/ipvs规则，kube-proxy管理）
+
 【Pod与service的关系】service通过标签关联pod；service使用iptables或ipvs为一组pod提供负载均衡能力
 
 【查看service与pod关联】kubectl get endpoints
@@ -882,6 +886,159 @@ ipvsadm -L -n
 
 集群中所有节点上的路由规则试一致的，所以访问任意节点IP:NodePort都会被转发到pod
 
+##### Service DNS
+
+【CoreDNS】k8s默认采用的DNS服务器，为每一个Service创建的DNS记录用于域名解析
+
+【ClusterIP A记录格式】<service-name>.<namespace-name>.svc.cluster.local
+
+【例子】my-svc.my-namespace.svc.cluster.loacal
+
+##### Ingrees与NodePort区别
+
+【NodePort】基于iptables/ipvs路由规则；一个端口只能一个服务使用，端口需要提前规划；只支持4层负载均衡
+
+【Ingress】基于域名分流；端口始终走80/443；支持7层负载均衡
+
+##### Service访问：
+
+域名 -> 公网负载均衡器（一般要求是七层的，能基于域名分流，因为后端通过不同nodeport端口区分项目） -> Service NodePort -> (iptables/ipvs) -> 分布在各个节点上pod
+
+##### Ingress访问：（NodePort）
+
+域名-> 公网负载均衡器（可以是四层或七层，建议使用四层） ->  ingress Controller-Service NodePort -> ingress Controller（nginx，基于域名分流） -> 分布在各个节点上pod
+
+##### Ingress访问（hostNetwork+daemonset/nodeselector）：
+
+域名-> 公网负载均衡器（可以是四层或七层，建议使用四层） -> ingress Controller（nginx，基于域名分流，使用宿主机网络 80和443） -> 分布在各个节点上pod
+
+【Kubernetes存储】
+
+【临时数据卷】与pod生命周期共存，用于pod之间的数据共享
+
+```yaml
+volumes:
+- name: data
+  emptyDir: {}
+```
+
+【节点数据卷】挂载node文件系统，用于pod中容器访问宿主机node的文件
+
+```yaml
+volumes:
+- name: data
+  hostPath: 
+    path: /tmp
+  	type: Directory
+```
+
+【网络数据卷】提供NFS挂载支持，用于文件共享服务器
+
+```
+安装nfs
+yum -y install nfs-utils
+vim /etc/exports
+#<共享目录> 主机(权限，sync，no_root_squash)
+/home/kubernetes *(rw,sync,no_root_squash)
+systemctl start nfs
+systemctl enable nfs
+注：每个node上都需要安装nfs
+```
+
+```yaml
+volumes:
+- name: nfs-test
+  nfs:
+    server: 10.0.0.5
+    path: /home/kubenetes
+```
+
+【持久数据卷】
+
+PersistentVolume（PV）：对存储资源创建和使用的抽象，使得存储作为集群中的资源管理
+
+PersistentVolumeClaim（PVC）：让用户不需要关心具体的Volume实现细节
+
+【应用开发部分pvc】
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/usr/share/nginx/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+【运维部分pv】建设多块不同大小pv卷供pvc选择使用
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypv
+spec:
+  capacity:
+    storage: 12Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.0.3.5
+    path: /home/kubernetes
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypv1
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.0.3.5
+    path: /home/kubernete
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypv2
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.0.3.5
+    path: /home/kubernete
+```
+
+##### pv与pvc始终一对一
+
+##### pvc会再剩余的pv中选择最接近大小的pv，且pv>=pvc
+
+操作pv、pvc等同操作pod命令
+
 
 
 #####   相关课后作业
@@ -898,6 +1055,7 @@ ipvsadm -L -n
 
 【创建一个deployment副本数为3，然后滚动更新镜像版本并记录更新，最后再回滚到上一个版本】
 
+```
 kubectl create deployment nginx --image=nginx:1.16 --replicas=3
 
 kubectl set image deployment nginx --nginx=nginx:1.17 --record=true
@@ -905,6 +1063,7 @@ kubectl set image deployment nginx --nginx=nginx:1.17 --record=true
 kubectl rollout history deployment nginx
 
 kubectl rollout undo deployment  nginx --to-revision=3
+```
 
 【给web deployment扩容副本数3】kubetcl scale deployment web --replicas=3 
 
@@ -990,6 +1149,16 @@ kubectl run web --image=nginx
 kubectl expose pod web --port=80 --target-port=80 --type=NodePort --name=web-service
 ```
 
+【任意名称创建deployment和service，使用busybox容器nslookup解析service】
+
+```
+kubectl create deployment web --image=nginx --replicas=3
+kubectl expose deployment web --name=web-service --prot=80 --target-port=80 --type=NodePort
+kubectl run bs --image=busybox:1.28.4 -- sleep 24h
+kubectl -it exec bs -- sh 
+nslookup web-service.default.cluster.local
+```
+
 【列出命名空间下某个service关联的所有pod，并将pod名称写到/opt/pod.txt中使用标签过滤】
 
 ```
@@ -998,5 +1167,47 @@ kubectl expose pod web --port=80 --target-port=80 --type=NodePort --name=web-ser
 方法2：kubectl describe svc web-service -n default | grep Selector | awk '{print $2}'
 2.使用获取到的pod标签筛选出pod名称
 kubectl get pod -l run=web -n default | sed '1d' | awk '{print $1}' > /opt/pod.txt
+```
+
+【使用ingress将项目应用暴露到外部访问】
+
+```
+kubectl run demo --image=lizhengliang/java-demo
+kubectl expose demo --port=8080 --target-port=8080 --type=NodePort
+```
+
+#####  NodePort模式需要更改nginx-controlller.yaml中service的配置
+
+![image-20211123110441501](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20211123110441501.png)
+
+##### hostNetwork模式需要更改nginx-controlller.yaml中deployment的配置
+
+![image-20211123110555465](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20211123110555465.png)
+
+```
+echo "10.0.0.5 www.web.jinp.com" >> /etc/hosts
+vim nginx-demo.yaml
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: java-demo
+spec:
+  rules:
+  - host: www.web.jinp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: demo
+          servicePort: 8080
+```
+
+```
+kubectl apply -f nginx-dmo.yaml
+curl www.web.jinp.com:nodeport
 ```
 
