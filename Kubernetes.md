@@ -1178,11 +1178,11 @@ kubectl expose demo --port=8080 --target-port=8080 --type=NodePort
 
 #####  NodePort模式需要更改nginx-controlller.yaml中service的配置
 
-![image-20211123110441501](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20211123110441501.png)
+![image-20211123110441501](https://github.com/jinp-jiang/Kubernetes/blob/main/NodePort.png)
 
 ##### hostNetwork模式需要更改nginx-controlller.yaml中deployment的配置
 
-![image-20211123110555465](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20211123110555465.png)
+![image-20211123110555465](https://github.com/jinp-jiang/Kubernetes/blob/main/hostNetwork.png)
 
 ```
 echo "10.0.0.5 www.web.jinp.com" >> /etc/hosts
