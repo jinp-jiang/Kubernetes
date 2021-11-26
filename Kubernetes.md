@@ -1037,7 +1037,191 @@ spec:
 
 ##### pvc会再剩余的pv中选择最接近大小的pv，且pv>=pvc
 
-操作pv、pvc等同操作pod命令
+操作pv、pvc等同操作pod命令 kubectl get pv,pvc
+
+##### PV生命周期
+
+【AccessModes访问模式】对pv进行访问模式的设置，用于描述用户应用对存储资源的访问控制
+
+ReadWriteOnce（RWO）：读写权限，但是只能被单个节点挂载
+
+ReadOnlyMany（ROX）：只读权限，可以被多个节点挂载
+
+ReadWriteMany（RWX）：读写权限，可以被多个节点挂载
+
+【RECLAMIM POLICY回收策略】
+
+Rtain（保留）：删除pod时保留数据，需要管理员手工清理数据
+
+Recyle（回收）：删除pv的数据，效果相当于执行rm -rf /home/kubernetes/*
+
+Delete（删除）：与PV相连的后端存储同时删除
+
+【STATUS状态】
+
+Available（可用）：表示可用状态，还未被任何pvc绑定
+
+Bound（已绑定）：表示pv已经被pvc绑定
+
+Released（已释放）：PVC被删除，但是资源还未被集群重新声明
+
+Failed（失败）：表示该PV的自动回收失败
+
+【静态供给】k8s运维工程师提前创建一堆pv，供开发者pvc使用；但维护成本过高
+
+【动态供给】使用StorageClass对象实现![动态供给](C:\Users\Administrator\Desktop\新建文件夹\动态供给.png)
+
+![基于NFS实现动态供给流程图](C:\Users\Administrator\Desktop\新建文件夹\基于NFS实现动态供给流程图.png)
+
+k8s默认不支持NFS动态供给需要单独部署
+
+项目地址：https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner
+
+```
+#授权访问apiserver
+kubectl apply -f rbac.yaml
+#部署插件，需修改里面的NFS服务器地址与共享目录
+kubectl apply -f deployment.yaml
+#创建存储类
+kubectl apply -f class.yaml
+#查看存储类
+kubectl get sc
+```
+
+【有状态应用部署初探】
+
+Deployment控制器原则：管理的所有pod一摸一样，提供同一个服务，也不考虑在哪台节点运行，可随意扩容缩容。这种应用称为“无状态”，例如web服务。
+
+这种模式无法应对分布式应用，如主从MySQL、主备关系的"有状态"应用。
+
+【StatefulSet控制器】部署有状态应用。解决Pod独立生命周期，保持Pod启动顺序和唯一性
+
+1.稳定，唯一的网络标识符，持久存储
+
+2.有序，优雅的部署和扩展、删除和终止
+
+3.有序，滚动更新
+
+应用场景：分布式应用、数据库集群
+
+【稳定网络ID】使用无头服务service将clusterIP定义为None即可。指定statefulSet控制器使用无头service
+
+【稳定的存储】statefulSet控制器存储卷使用volumeClaimTemplate创建，使用该vct创建时会为每个pod分配不同的pvc
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web6
+  labels:
+    app: web6
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: web6
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web6
+spec:
+  selector:
+    matchLabels:
+      app: web6
+  serviceName: "web6"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web6
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "managed-nfs-storage"
+      resources:
+        requests:
+          storage: 1Gi
+```
+
+【statefulSet与Deployment的区别】域名；主机名；存储（PVC）
+
+##### 应用程序数据存储
+
+【ConfigMap】存储配置文件。所存储的数据记录在k8s中的Etcd
+
+【Secret】存储敏感数据。相较ConfigMap多了base64加密
+
+【Pod使用configmap方式】变量注入；数据卷挂载】
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-demo
+data:
+  abc: "123"
+  efg: "456"
+
+  redis_config: |
+    port: 6379
+    IP: 123456
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-pod
+spec:
+  containers:
+    - name: demo
+      image: busybox
+      command: ["sleep", "3600"]
+      env:
+      - name: ABC
+        valueFrom:
+          configMapKeyRef:
+            name: game-demo
+            key: abc
+      - name: EFG
+        valueFrom:
+          configMapKeyRef:
+            name: game-demo
+            key: efg
+      volumeMounts:
+      - name: config
+        mountPath: /config
+        readOnly: true
+  volumes:
+  - name: config
+    configMap:
+      name: game-demo
+      items:
+        - key: "redis_config"
+          path: "reis_config"
+```
+
+
+
+
+
+
 
 
 
@@ -1178,11 +1362,11 @@ kubectl expose demo --port=8080 --target-port=8080 --type=NodePort
 
 #####  NodePort模式需要更改nginx-controlller.yaml中service的配置
 
-![image-20211123110441501](https://github.com/jinp-jiang/Kubernetes/blob/main/NodePort.png)
+![NodePort](C:\Users\Administrator\Desktop\腾云忆想\TCP\NodePort.png)
 
 ##### hostNetwork模式需要更改nginx-controlller.yaml中deployment的配置
 
-![image-20211123110555465](https://github.com/jinp-jiang/Kubernetes/blob/main/hostNetwork.png)
+![hostNetwork](C:\Users\Administrator\Desktop\腾云忆想\TCP\hostNetwork.png)
 
 ```
 echo "10.0.0.5 www.web.jinp.com" >> /etc/hosts
