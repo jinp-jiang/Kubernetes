@@ -1217,11 +1217,185 @@ spec:
           path: "reis_config"
 ```
 
+【Secret存储敏感信息】
 
+```
+echo -n 'admin' | base64
+echo -n '123456' | base64
+vim test-secret.yaml
+```
 
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-user
+type: Opaque
+data:
+  username: YWRtaW4=
+  pass: MTIzNDU2
+```
 
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-secretpod
+spec:
+  containers:
+  - name: test-spod
+    image: redis
+    env:
+    - name: USER
+      valueFrom:
+        secretKeyRef:
+          name: db-user
+          key: username
+    - name: PASS
+      valueFrom:
+        secretKeyRef:
+          name: db-user
+          key: pass
+    volumeMounts:
+    - name: foo
+      mountPath: "/etc/foo"
+      readOnly: true
+  volumes:
+  - name: foo
+    secret:
+      secretName: db-user
+      items:
+      - key: username
+        path: my-username
+      - key: pass
+        path: my-password
+```
 
+##### Kuberbetes安全
 
+【kubernetes RBAC授权】Authentication（鉴权）-> Authorization（授权）-> Admission Control（准入控制）
+
+【Authentication（鉴权）】HTTPS证书认证（kubeconfig）；HTTP Token认证（serviceAccount）；HTTP Base认证。
+
+【主体】user；Group；ServiceAccount
+
+【角色】Role；ClusterRole
+
+【角色绑定】Rolebinding；ClusterRoleBinding
+
+【RBAC权限访问控制步骤】
+
+1.用k8s生成 CA签发证书
+
+2.生成kubeconfig授权文件
+
+3.创建RBAC权限策略
+
+4.指定kubeconfig文件测试权限：kubectl get pods --kubeconfig=[授权文件绝对路径]
+
+【RBAC授权yaml】
+
+**服务账号（SA）示例：为一个服务账号分配只能创建deployment、**
+
+##### daemonset、statefulset的权限
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-token
+  namespace: app-team1
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: test-clusterrole
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments","daemonsets","statefulsets"]
+  verbs: ["create","get","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: test-token
+  namespace: app-team1
+subjects:
+- kind: ServiceAccount
+  name: test-token
+  namespace: app-team1
+roleRef:
+  kind: ClusterRole
+  name: test-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+```
+
+```
+kubectl create deployment web --image=nginx -n app-team1 --as=system:serviceaccount:app-team1:test-token
+```
+
+##### 需求：test命名空间下所有pod可以互相访问，也可以访问其他命名空间Pod，但其他命名空间不能访问test命名空间Pod。
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: test
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector: {}
+```
+
+##### 需求：将test命名空间携带run=web标签的Pod隔离，只允许携带run=client1标签的Pod访问80端口。
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: test
+spec:
+  podSelector: 
+    matchLabels:
+      run: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          run: client1
+    ports:
+    - protocol: TCP
+      port: 80
+```
+
+##### 需求：只允许dev命名空间中的Pod访问test命名空间中的pod 80端口
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: test
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: dev
+    ports:
+    - protocol: TCP
+      port: 80
+```
 
 
 
@@ -1393,5 +1567,144 @@ spec:
 ```
 kubectl apply -f nginx-dmo.yaml
 curl www.web.jinp.com:nodeport
+```
+
+【创建一个secret，并创建2个pod，pod1挂载该secret，路径为/secret。pod2使用环境变量引用该secret，该变量的环境变量名为ABC】
+
+secret名称：my-secret
+
+pod1名称：pod-volume-secret
+
+ pod2名称：pod-env-secret
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+type: Opaque
+data:
+  testData: MTIzNDU=
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-env-secret
+spec:
+  containers:
+  - name: bs2
+    image: busybox
+    command:
+    - sleep 
+    - 24h
+    env:
+      - name: ABC
+        valueFrom:
+          secretKeyRef:
+            name: my-secret
+            key: testData
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-volume-secret
+spec:
+  containers:
+  - name: bs1
+    image: busybox
+    command:
+    - sleep 
+    - 24h
+    volumeMounts:
+    - name: config
+      mountPath: "/secret"
+  volumes:
+  - name: config
+    secret:
+      secretName: my-secret
+```
+
+【创建一个PV，在创建一个Pod使用该pv】
+
+容量：5Gi
+
+访问模式：ReadWriteOnce
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv0001
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    path: /home/kubernetes
+    server: 10.0.3.5
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mynginx
+spec:
+  containers:
+    - name: nginx-index
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+【创建一个pod并挂载数据卷，不可用持久卷】
+
+卷来源：emptyDir、hostPath任意
+
+挂载路径：/data
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    volumeMounts:
+    - mountPath: /data
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    hostPath:
+      path: /home
+      type: Directory
+```
+
+【将pv按照名称、容量排序，并保存到/opt/pv文件】
+
+```
+kubectl get pv --sort-by=.metadata.name > /opt/pv
+kubectl get pv --sort-by=.spec.capacity.storage | awk '{print $1,$2}' >> /opt/pv
 ```
 
