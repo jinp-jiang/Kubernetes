@@ -77,6 +77,11 @@ kubectl apply -f calico.yaml
   
 kubectl apply -f recommended.yaml （安装dashboard UI）
 kubectl get pods,svc -n 【namespace的名字】
+注意： 从 v1.24.0 开始，ServiceAccount 不再自动生成 Secret。
+如果你还想要自动生成 Secret，那么可以给 kube-controller-manager 配置特性
+vim /etc/kubernetes/manifests/kube-controller-manager.yaml
+- --feature-gates=LegacyServiceAccountTokenNoAutoGeneration=false
+
 创建用户
 kubect1 create serviceaccount dashboard-admin -n kube-system
 用户授权
@@ -85,11 +90,11 @@ kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --
 kubectl describe secrets -n kube-system $(kubectl -n kube-system get secret | awk '/dashboard-admin/{print $1}'
 
 
-	执行该yaml文件可能会遇到的问题
-	5.1 The connection to the server localhost:8080 was refused - did you specify the right host or port?
-		该报错需要配置~/.bash_profile环境变量
-		echo “export KUBECONFIG=/etc/kubernetes/admin.conf” >> ~/.bash_profile
-		source ~/.bash_profile
+执行该yaml文件可能会遇到的问题
+5.1 The connection to the server localhost:8080 was refused - did you specify the right host or port?
+该报错需要配置~/.bash_profile环境变量
+echo “export KUBECONFIG=/etc/kubernetes/admin.conf” >> ~/.bash_profile
+source ~/.bash_profile
 
 6.新建一个带nginx服务的pod
 首先需要使用docker拉取nginx的镜像
