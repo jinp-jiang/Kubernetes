@@ -93,7 +93,7 @@ kubectl describe secrets -n kube-system $(kubectl -n kube-system get secret | aw
 执行该yaml文件可能会遇到的问题
 5.1 The connection to the server localhost:8080 was refused - did you specify the right host or port?
 该报错需要配置~/.bash_profile环境变量
-echo “export KUBECONFIG=/etc/kubernetes/admin.conf” >> ~/.bash_profile
+echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile
 source ~/.bash_profile
 
 6.新建一个带nginx服务的pod
